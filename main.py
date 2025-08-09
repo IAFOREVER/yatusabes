@@ -39,13 +39,21 @@ REDIS_CACHE_TTL = int(os.getenv("REDIS_CACHE_TTL", 3600))
 def read_root():
     """
     Endpoint raíz para verificar que la API está funcionando.
-    Se añade un número de versión para confirmar que el despliegue fue exitoso.
     """
     return {
         "status": "ok",
         "message": "API de transcripciones funcionando",
-        "version": "2.0"  # Indicador de la nueva versión
+        "version": "3.0"  # Nueva versión para confirmar despliegue
     }
+
+# --- NUEVO ENDPOINT DE PRUEBA ---
+@app.get("/test")
+def test_endpoint():
+    """
+    Este endpoint simple nos ayuda a verificar si el ruteo de FastAPI funciona.
+    """
+    print("LOG: El endpoint /test fue alcanzado con éxito.")
+    return {"message": "Test endpoint is working!"}
 
 
 @app.get("/transcript")
@@ -94,8 +102,10 @@ async def transcript(
 
 @app.get("/transcript/languages")
 async def available_languages(video_id: str):
+    print(f"LOG: Solicitud recibida en /languages para video_id: {video_id}")
     try:
         langs = get_available_languages(video_id)
+        print(f"LOG: Idiomas encontrados para {video_id}: {langs}")
         return JSONResponse(content={"video_id": video_id, "available_languages": langs})
     except TranscriptsDisabled as e:
         print(f"ERROR: TranscriptsDisabled en /languages para video_id: {video_id}. Excepción: {e}")
