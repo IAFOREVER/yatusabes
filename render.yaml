@@ -1,0 +1,27 @@
+services:
+  # Servicio para la API de FastAPI
+  - type: web
+    name: yatusabes-api
+    env: docker
+    # ¡IMPORTANTE! Cambia la URL por la de tu repositorio
+    repo: https://github.com/IAFOREVER/yatusabes.git
+    region: oregon
+    plan: free
+    healthCheckPath: /
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: yatusabes-redis
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: 3.11
+      - key: PORT
+        value: 8000
+
+  # Servicio para la base de datos de Redis
+  - type: redis
+    name: yatusabes-redis
+    region: oregon
+    plan: free
+    maxmemoryPolicy: allkeys-lru
