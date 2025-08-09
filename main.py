@@ -5,7 +5,8 @@ from fastapi.responses import PlainTextResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import redis.asyncio as redis
 
-from transcript import get_transcript_list, to_srt, get_available_languages
+# Se comenta la importación real para asegurarnos de no usarla en la prueba
+# from transcript import get_transcript_list, to_srt, get_available_languages
 from youtube_transcript_api import TranscriptsDisabled, NoTranscriptFound
 
 # Se crea la instancia de la aplicación FastAPI
@@ -43,10 +44,10 @@ def read_root():
     return {
         "status": "ok",
         "message": "API de transcripciones funcionando",
-        "version": "3.0"  # Nueva versión para confirmar despliegue
+        "version": "4.0"  # Nueva versión para confirmar despliegue
     }
 
-# --- NUEVO ENDPOINT DE PRUEBA ---
+
 @app.get("/test")
 def test_endpoint():
     """
@@ -56,63 +57,27 @@ def test_endpoint():
     return {"message": "Test endpoint is working!"}
 
 
-@app.get("/transcript")
-async def transcript(
-    video_id: str,
-    languages: str = Query("en", description="Lista de códigos de idioma separados por comas"),
-    format: str = Query("json", regex="^(json|srt)$", description="Formato de respuesta: json o srt"),
-):
-    langs = [lang.strip() for lang in languages.split(",") if lang.strip()]
-    cache_key = f"transcript:{video_id}:{','.join(langs)}:{format}"
-
-    try:
-        cached = await redis_client.get(cache_key)
-        if cached:
-            media_type = "application/json" if format == "json" else "text/plain"
-            return PlainTextResponse(content=cached, media_type=media_type)
-    except Exception as e:
-        print(f"ERROR al acceder a Redis: {e}")
-
-    try:
-        transcript_data = get_transcript_list(video_id, langs)
-    except TranscriptsDisabled as e:
-        print(f"ERROR: TranscriptsDisabled para video_id: {video_id}. Excepción: {e}")
-        raise HTTPException(status_code=404, detail="Las transcripciones están deshabilitadas para este video.")
-    except NoTranscriptFound as e:
-        print(f"ERROR: NoTranscriptFound para video_id: {video_id}. Excepción: {e}")
-        raise HTTPException(status_code=404, detail="No se encontró una transcripción para el video y los idiomas dados.")
-    except Exception as e:
-        print(f"ERROR: Excepción genérica en /transcript para video_id: {video_id}. Excepción: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-    if format == "json":
-        response_content = json.dumps(transcript_data, indent=2, ensure_ascii=False)
-        media_type = "application/json"
-    else:
-        response_content = to_srt(transcript_data)
-        media_type = "text/plain"
-
-    try:
-        await redis_client.setex(cache_key, REDIS_CACHE_TTL, response_content)
-    except Exception as e:
-        print(f"ERROR al guardar en Redis: {e}")
-
-    return PlainTextResponse(content=response_content, media_type=media_type)
-
-
+# --- MODIFICACIÓN CLAVE ---
 @app.get("/transcript/languages")
 async def available_languages(video_id: str):
-    print(f"LOG: Solicitud recibida en /languages para video_id: {video_id}")
-    try:
-        langs = get_available_languages(video_id)
-        print(f"LOG: Idiomas encontrados para {video_id}: {langs}")
-        return JSONResponse(content={"video_id": video_id, "available_languages": langs})
-    except TranscriptsDisabled as e:
-        print(f"ERROR: TranscriptsDisabled en /languages para video_id: {video_id}. Excepción: {e}")
-        raise HTTPException(status_code=404, detail="Las transcripciones están deshabilitadas para este video.")
-    except Exception as e:
-        print(f"ERROR: Excepción genérica en /languages para video_id: {video_id}. Excepción: {e}")
-        raise HTTPException(status_code=500, detail=str(e))
+    """
+    Endpoint modificado para devolver una respuesta simulada (mock).
+    Esto nos permite probar si el resto del flujo funciona correctamente.
+    """
+    print(f"LOG: Solicitud recibida en /languages (VERSIÓN SIMULADA) para video_id: {video_id}")
+    
+    # En lugar de llamar a la API de YouTube, devolvemos datos falsos.
+    fake_languages = ["es-FAKE", "en-FAKE", "fr-FAKE"]
+    
+    print(f"LOG: Devolviendo respuesta simulada: {fake_languages}")
+    
+    return JSONResponse(content={"video_id": video_id, "available_languages": fake_languages})
+
+
+# Se deja el endpoint original comentado por ahora
+# @app.get("/transcript")
+# async def transcript(...):
+#     ...
 
 
 @app.on_event("shutdown")
