@@ -3,8 +3,7 @@ services:
   - type: web
     name: yatusabes-api
     env: docker
-    # ¡IMPORTANTE! Cambia la URL por la de tu repositorio
-    repo: https://github.com/IAFOREVER/yatusabes.git
+    repo: https://github.com/IAFOREVER/yatusabes.git # <-- URL YA ACTUALIZADA
     region: oregon
     plan: free
     healthCheckPath: /
@@ -25,3 +24,5 @@ services:
     region: oregon
     plan: free
     maxmemoryPolicy: allkeys-lru
+    # --- LÍNEA AÑADIDA PARA CORREGIR EL ERROR ---
+    ipAllowList: ['0.0.0.0/0']
