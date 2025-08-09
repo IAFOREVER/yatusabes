@@ -8,15 +8,15 @@ import redis.asyncio as redis
 from transcript import get_transcript_list, to_srt, get_available_languages
 from youtube_transcript_api import TranscriptsDisabled, NoTranscriptFound
 
-# --- Tarea 2: Habilitar CORS ---
 # Se crea la instancia de la aplicación FastAPI
 app = FastAPI()
 
-# Se define la lista de orígenes permitidos para CORS.
-# Esto es crucial para que tu frontend en Firebase pueda comunicarse con esta API.
+# --- Habilitar CORS ---
+# Se define la lista de orígenes permitidos.
+# Se ha añadido la URL correcta de tu aplicación en Firebase.
 origins = [
     "https://ia-tusabes.web.app",  # URL de producción en Firebase
-    "http://localhost:5000",      # URL para pruebas locales del frontend
+    "http://localhost:5000",      # URL para pruebas locales
     "http://127.0.0.1:5000",     # Otra URL común para pruebas locales
 ]
 
@@ -25,35 +25,27 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
     allow_credentials=True,
-    allow_methods=["*"],  # Permite todos los métodos (GET, POST, etc.)
-    allow_headers=["*"],  # Permite todas las cabeceras
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
-# --- Fin de la Tarea 2 ---
 
-
-# --- Tarea 1: Modificar la conexión a Redis ---
+# --- Conexión a Redis ---
 # Se obtiene la URL de conexión a Redis desde las variables de entorno.
-# Render.com proporcionará esta URL automáticamente.
 REDIS_URL = os.getenv("REDIS_URL")
 if not REDIS_URL:
-    # Si la variable no está definida, se lanza un error para detener la ejecución.
     raise ValueError("La variable de entorno REDIS_URL no está definida")
 
-# Se crea el cliente de Redis usando la URL, lo que simplifica la configuración.
+# Se crea el cliente de Redis usando la URL.
 redis_client = redis.from_url(REDIS_URL, decode_responses=True)
-# --- Fin de la Tarea 1 ---
 
-
-# Se obtiene el tiempo de vida (TTL) para el caché de Redis desde las variables de entorno.
-# Se usa un valor por defecto de 3600 segundos (1 hora) si no está definido.
+# Se obtiene el tiempo de vida (TTL) para el caché de Redis.
 REDIS_CACHE_TTL = int(os.getenv("REDIS_CACHE_TTL", 3600))
 
 
 @app.get("/")
 def read_root():
     """
-    Endpoint raíz para verificar que la API está funcionando.
-    Render.com usa esto como un 'health check'.
+    Endpoint raíz para verificar que la API está funcionando (Health Check).
     """
     return {"status": "ok", "message": "API de transcripciones funcionando"}
 
@@ -64,9 +56,6 @@ async def transcript(
     languages: str = Query("en", description="Lista de códigos de idioma separados por comas"),
     format: str = Query("json", regex="^(json|srt)$", description="Formato de respuesta: json o srt"),
 ):
-    """
-    Endpoint principal para obtener la transcripción de un video.
-    """
     langs = [lang.strip() for lang in languages.split(",") if lang.strip()]
     cache_key = f"transcript:{video_id}:{','.join(langs)}:{format}"
 
@@ -77,9 +66,7 @@ async def transcript(
             media_type = "application/json" if format == "json" else "text/plain"
             return PlainTextResponse(content=cached, media_type=media_type)
     except Exception as e:
-        # Si Redis falla, se registra el error pero se continúa para no detener el servicio.
         print(f"Error al acceder a Redis: {e}")
-
 
     # 2) Si no está en caché, obtener de la API de YouTube
     try:
@@ -102,7 +89,6 @@ async def transcript(
     try:
         await redis_client.setex(cache_key, REDIS_CACHE_TTL, response_content)
     except Exception as e:
-        # Si Redis falla al guardar, se registra el error pero se devuelve la respuesta igualmente.
         print(f"Error al guardar en Redis: {e}")
 
     return PlainTextResponse(content=response_content, media_type=media_type)
@@ -110,9 +96,6 @@ async def transcript(
 
 @app.get("/transcript/languages")
 async def available_languages(video_id: str):
-    """
-    Endpoint para obtener los idiomas de subtítulos disponibles para un video.
-    """
     try:
         langs = get_available_languages(video_id)
         return JSONResponse(content={"video_id": video_id, "available_languages": langs})
@@ -124,7 +107,4 @@ async def available_languages(video_id: str):
 
 @app.on_event("shutdown")
 async def shutdown_event():
-    """
-    Evento que se ejecuta al apagar la aplicación para cerrar la conexión a Redis de forma segura.
-    """
     await redis_client.close()
