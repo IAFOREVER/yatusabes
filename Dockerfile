@@ -4,14 +4,13 @@ FROM python:3.11-slim
 # Establece el directorio de trabajo dentro del contenedor
 WORKDIR /app
 
-# Copia los archivos necesarios
-COPY ./app /app
-COPY requirements.txt .
+# Copia todos los archivos del repositorio al directorio de trabajo
+COPY . .
 
-# Instala las dependencias
+# Instala las dependencias de Python
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expone el puerto de FastAPI
+# Expone el puerto que usará Render (definido en render.yaml)
 EXPOSE 8000
 
 # Comando para correr la app

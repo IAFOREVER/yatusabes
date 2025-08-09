@@ -15,7 +15,7 @@ app = FastAPI()
 # Se define la lista de orígenes permitidos para CORS.
 # Esto es crucial para que tu frontend en Firebase pueda comunicarse con esta API.
 origins = [
-    "https://yatusabes.web.app",  # URL de producción en Firebase
+    "https://ia-tusabes.web.app",  # URL de producción en Firebase
     "http://localhost:5000",      # URL para pruebas locales del frontend
     "http://127.0.0.1:5000",     # Otra URL común para pruebas locales
 ]
