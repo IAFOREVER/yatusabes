@@ -26,4 +26,5 @@ services:
     maxmemoryPolicy: allkeys-lru
     # --- LÍNEA CORREGIDA ---
     ipAllowList:
-      - 0.0.0.0/0
+      - source: 0.0.0.0/0
+        description: "Allow all"
