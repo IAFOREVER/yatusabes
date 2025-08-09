@@ -26,21 +26,16 @@ def _get_proxies() -> Optional[List[str]]:
 def get_transcript_list(video_id: str, languages: Optional[List[str]] = None) -> List[dict]:
     """
     Obtiene la transcripción de un video, utilizando proxies si están disponibles.
-    Se usa el flujo manual para ser compatible con la v1.2.2 de la librería.
+    Usa los métodos estáticos de la librería, compatibles con versiones nuevas.
     """
     try:
         proxies = _get_proxies()
         languages_to_try = languages if languages else ['en']
         
-        # Se crea una instancia de la API
-        ytt_api = YouTubeTranscriptApi()
-        
-        # Se usa el método .list() que es el correcto para esta versión
-        transcript_list_obj = ytt_api.list(video_id, proxies=proxies)
-        
-        # Se busca y obtiene la transcripción
-        transcript = transcript_list_obj.find_transcript(languages_to_try)
-        raw_transcript = transcript.fetch()
+        # Este método estático busca y obtiene la transcripción en un solo paso.
+        raw_transcript = YouTubeTranscriptApi.get_transcript(
+            video_id, languages=languages_to_try, proxies=proxies
+        )
         
         # Limpiar y formatear el resultado.
         def clean_text(text: str) -> str:
@@ -70,10 +65,9 @@ def get_available_languages(video_id: str) -> List[str]:
     try:
         proxies = _get_proxies()
         # --- CORRECCIÓN FINAL ---
-        # Se crea una instancia y se usa el método .list() que es compatible
-        # con la versión 1.2.2 de la librería.
-        ytt_api = YouTubeTranscriptApi()
-        transcript_list = ytt_api.list(video_id, proxies=proxies)
+        # Se usa el método estático .list_transcripts() que es compatible
+        # con la nueva versión de la librería y acepta proxies.
+        transcript_list = YouTubeTranscriptApi.list_transcripts(video_id, proxies=proxies)
         return [t.language_code for t in transcript_list]
     except (TranscriptsDisabled, VideoUnavailable) as e:
         raise
