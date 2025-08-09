@@ -37,7 +37,15 @@ REDIS_CACHE_TTL = int(os.getenv("REDIS_CACHE_TTL", 3600))
 
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "API de transcripciones funcionando"}
+    """
+    Endpoint raíz para verificar que la API está funcionando.
+    Se añade un número de versión para confirmar que el despliegue fue exitoso.
+    """
+    return {
+        "status": "ok",
+        "message": "API de transcripciones funcionando",
+        "version": "2.0"  # Indicador de la nueva versión
+    }
 
 
 @app.get("/transcript")
@@ -60,15 +68,12 @@ async def transcript(
     try:
         transcript_data = get_transcript_list(video_id, langs)
     except TranscriptsDisabled as e:
-        # LOGGING AÑADIDO
         print(f"ERROR: TranscriptsDisabled para video_id: {video_id}. Excepción: {e}")
         raise HTTPException(status_code=404, detail="Las transcripciones están deshabilitadas para este video.")
     except NoTranscriptFound as e:
-        # LOGGING AÑADIDO
         print(f"ERROR: NoTranscriptFound para video_id: {video_id}. Excepción: {e}")
         raise HTTPException(status_code=404, detail="No se encontró una transcripción para el video y los idiomas dados.")
     except Exception as e:
-        # LOGGING AÑADIDO
         print(f"ERROR: Excepción genérica en /transcript para video_id: {video_id}. Excepción: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -93,11 +98,9 @@ async def available_languages(video_id: str):
         langs = get_available_languages(video_id)
         return JSONResponse(content={"video_id": video_id, "available_languages": langs})
     except TranscriptsDisabled as e:
-        # LOGGING AÑADIDO
         print(f"ERROR: TranscriptsDisabled en /languages para video_id: {video_id}. Excepción: {e}")
         raise HTTPException(status_code=404, detail="Las transcripciones están deshabilitadas para este video.")
     except Exception as e:
-        # LOGGING AÑADIDO
         print(f"ERROR: Excepción genérica en /languages para video_id: {video_id}. Excepción: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
